@@ -19,5 +19,4 @@ make
 
 # move the binary to PATH
 make install
-sudo cp ./minidocker /usr/local/bin/
 
