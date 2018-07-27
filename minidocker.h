@@ -27,6 +27,7 @@ class container{
     void start_bash();
     void set_rootdir();
     void set_network();
+    void set_usermap();
 
   public:
     container(container_conf &_conf);

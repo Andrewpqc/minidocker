@@ -33,7 +33,7 @@ namespace minidocker{
 
     void minidocker::container::set_procsys(){
         mount("none", "/proc", "proc", 0, NULL);
-        mount("none", "/sys", "sysfs", 0, NULL);
+        mount("none", "/sys", "sys", 0, NULL);
     }
 
     void minidocker::container::start_bash(){
@@ -85,7 +85,24 @@ namespace minidocker{
         ofresult<<std::endl<<"nameserver 114.114.114.114"<<std::endl;
         ofresult.close();
     }
-            
+
+    void::minidocker::container::set_usermap(){
+        char uid_path[256];
+        char gid_path[256];
+
+        sprintf(uid_path,"/proc/%d/uid_map",getpid());
+        sprintf(gid_path,"/proc/%d/gid_map",getpid());
+        std::ofstream uid_map(uid_path);
+        std::ofstream gid_map(gid_path);
+
+        uid_map<<"0 1000 2";
+        gid_map<<"0 1000 2";
+       
+
+        uid_map.close();
+        gid_map.close();
+        
+    }
 
 
     void minidocker::container::run(){
@@ -112,14 +129,16 @@ namespace minidocker{
             _this->set_rootdir();
             _this->set_procsys();
             _this->set_network();
-            _this->start_bash(); //start_bash放最后           
+            _this->set_usermap();                        
+            _this->start_bash(); //start_bash放最后    
+                   
             return 1;
         };
-        int flag=CLONE_NEWUTS|CLONE_NEWNS|CLONE_NEWPID|CLONE_NEWNET|SIGCHLD;
+        int flag=CLONE_NEWUTS|CLONE_NEWNS|CLONE_NEWPID|CLONE_NEWNET|CLONE_NEWUSER|SIGCHLD;
         int child_pid = clone(setup, child_stack + STACK_SIZE,flag,this);
         std::cout<<child_pid<<std::endl;
         if (child_pid == -1){
-            std::cout << "clone failed,please retry with root." << std::endl;
+            std::cout << "clone failed,maybe you should run it with root." << std::endl;
         }
 
          // 将 veth2 转移到容器内部, 并命名为 eth0
