@@ -36,7 +36,6 @@ class container{
     ~container();
     void run();
     void limit_cpu(float limit_rate);//限制cpu占用率 rate=0.1,0.25,0.5,....
-    void limit_cpuset(std::string);//限制使用的cpu核数 "1,2"
     void limit_memory(std::string);//限制内存占用率 32B,23b,15M,15m,1G
 };
 
