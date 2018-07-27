@@ -21,6 +21,7 @@ class container{
     char child_stack[STACK_SIZE];//子进程栈
     char *veth1;
     char *veth2;
+    pid_t child_pid;
     
     void set_hostname();
     void set_procsys();
@@ -28,13 +29,15 @@ class container{
     void set_rootdir();
     void set_network();
     void set_usermap();
+    unsigned long long all2KB(std::string upper_limit);
 
   public:
     container(container_conf &_conf);
     ~container();
     void run();
-    void limit_cpu();
-    void limit_memory();
+    void limit_cpu(float limit_rate);//限制cpu占用率 rate=0.1,0.25,0.5,....
+    void limit_cpuset(std::string);//限制使用的cpu核数 "1,2"
+    void limit_memory(std::string);//限制内存占用率 32B,23b,15M,15m,1G
 };
 
 }

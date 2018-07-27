@@ -5,8 +5,13 @@
 #include <unistd.h>    // execv, sethostname, chroot, fchdir
 #include <sched.h>     // clone
 #include <signal.h>
+#include <dirent.h>
+#include <stdlib.h>
 #include <cstring>
 #include <fstream> 
+#include <inttypes.h>
+#include <stdarg.h>
+#include <sys/stat.h>
 #include <string> //std::string
 #include <net/if.h>     // if_nametoindex
 #include <arpa/inet.h>  // inet_pton
@@ -16,6 +21,22 @@
 
 
 namespace minidocker{
+
+    //functions outside of the container calss//
+
+    std::string& trim(std::string &s){
+        if (s.empty()) {
+            return s;
+        }
+    
+        s.erase(0,s.find_first_not_of(" "));
+        s.erase(s.find_last_not_of(" ") + 1);
+        return s;
+    }
+
+
+
+    //member functions of the container calss//
 
     minidocker::container::container(minidocker::container_conf &_conf){
         this->conf=_conf;
@@ -104,6 +125,20 @@ namespace minidocker{
         
     }
 
+    unsigned long long minidocker::container::all2KB(std::string upper_limit){
+        std::string upperlimit=trim(upper_limit);
+        char last_char=upperlimit[upperlimit.length()-1];
+        if (last_char=='K' || last_char=='k'){
+            return atoi(upperlimit.c_str());
+        }else if(last_char=='M' || last_char=='m'){
+            return  atoi(upperlimit.c_str())*1024;
+        }else if(last_char=='G' || last_char=='g'){
+            return atoi(upperlimit.c_str())*1024*1024;
+        }else{
+            return 0;
+        }     
+    }
+
 
     void minidocker::container::run(){
         char veth1buf[IFNAMSIZ] = "andrewpqc0X";
@@ -137,6 +172,7 @@ namespace minidocker{
         int flag=CLONE_NEWUTS|CLONE_NEWNS|CLONE_NEWPID|CLONE_NEWNET|CLONE_NEWUSER|SIGCHLD;
         int child_pid = clone(setup, child_stack + STACK_SIZE,flag,this);
         std::cout<<child_pid<<std::endl;
+        this->child_pid=child_pid;
         if (child_pid == -1){
             std::cout << "clone failed,maybe you should run it with root." << std::endl;
         }
@@ -147,12 +183,50 @@ namespace minidocker{
         waitpid(child_pid, NULL, 0); // 等待子进程的退出
     }
 
-    void minidocker::container::limit_cpu(){
+    void minidocker::container::limit_cpu(float rate){
+        char cupDir[128];
+        sprintf(cupDir,"/sys/fs/cgroup/cpu/minidocker");
+        std::fstream _file;
+        _file.open(cupDir,std::ios::in);
+        if(!_file && mkdir(cupDir,0755)==-1){
+             std::cout<<"create '/sys/fs/cgroup/cpu/minidocker' fail"<<std::endl;
+             return;
+        }else{
+            unsigned long weight=static_cast<int32_t>(100000*rate);
+            
+            char cmd1[128];
+            char cmd2[128];
+            sprintf(cmd1,"echo %u >> /sys/fs/cgroup/cpu/minidocker/tasks",this->child_pid);
+            sprintf(cmd2,"echo %lu > /sys/fs/cgroup/cpu/minidocker/cpu.cfs_quota_us",weight);
 
+            system(cmd1);//将本container的子进程放到cgroup
+            system(cmd2);//设置cpu占用率
+      }
     }
 
-    void minidocker::container::limit_memory(){
+    void minidocker::container::limit_memory(std::string upper_limit){
+        char cupDir[128];
+        sprintf(cupDir,"/sys/fs/cgroup/memory/minidocker");
+        std::fstream _file;
+        _file.open(cupDir,std::ios::in);
+        if(!_file && mkdir(cupDir,0755)==-1){
+             std::cout<<"create '/sys/fs/cgroup/memory/minidocker' fail"<<std::endl;
+             return;
+        }else{
+            unsigned long long total_in_KB=this->all2KB(upper_limit);
+            if(total_in_KB==0){
+                std::cout<<'"'<<upper_limit<<'"'<<"is invalid."<<std::endl;
+                return;
+            }
+            
+            char cmd1[128];
+            char cmd2[128];
+            sprintf(cmd1,"echo %u >> /sys/fs/cgroup/memory/minidocker/tasks",this->child_pid);
+            sprintf(cmd2,"echo %lluB > /sys/fs/cgroup/memory/minidocker/memory.limit_in_bytes",total_in_KB);
 
+            system(cmd1);//将本container的子进程放到cgroup的memory子系统
+            system(cmd2);//设置内存上限
+      }
     }
 
     
