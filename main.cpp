@@ -8,10 +8,10 @@
 int main(int argc, char** argv){
     std::cout << "container start..." << std::endl;
 
-    cmdline::parser cmd;
-    cmd.add<std::string>("host", 'h', "host name", true, "");
-    cmd.add<int>("port", 'p', "port number", false, 80, cmdline::range(1, 65535));
-    cmd.parse_check(argc, argv);
+    // cmdline::parser cmd;
+    // cmd.add<std::string>("host", 'h', "host name", true, "");
+    // cmd.add<int>("port", 'p', "port number", false, 80, cmdline::range(1, 65535));
+    // cmd.parse_check(argc, argv);
     
     minidocker::container_conf conf{
         host : "minidocker",          // 容器主机名
@@ -24,8 +24,8 @@ int main(int argc, char** argv){
     minidocker::container myfirstcontainer(conf);
     myfirstcontainer.run();
 
-    std::cout  << cmd.get<std::string>("host") << ":"
-       << cmd.get<int>("port") << std::endl;
+    // std::cout  << cmd.get<std::string>("host") << ":"
+    //    << cmd.get<int>("port") << std::endl;
     
 
     std::cout << "container exit..." << std::endl;

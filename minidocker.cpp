@@ -103,11 +103,10 @@ void minidocker::container::set_network(){
     new_hwaddr(mac);
     setup_hw_addr(mac, "eth0");
 
-    // add  nameserver 114.114.114.114 --> /etc/resolv.conf
-    std::ofstream ofresult("/etc/resolv.conf", std::ios::app);
-    ofresult << std::endl
-             << "nameserver 114.114.114.114" << std::endl;
-    ofresult.close();
+    // // add  nameserver 114.114.114.114 --> /etc/resolv.conf
+    // std::ofstream ofresult("/etc/resolv.conf", std::ios::app);
+    // ofresult << "nameserver 8.8.8.8" << std::endl;
+    // ofresult.close();
 }
 
 //用户映射，将当前用户映射到容器中的root用户
@@ -170,12 +169,13 @@ void minidocker::container::run(){
         _this->set_rootdir();
         _this->set_procsys();
         _this->set_network();
-        _this->set_usermap();
+        // _this->set_usermap();
         _this->start_bash(); //start_bash放最后
 
         return 1;
     };
-    int flag = CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER | SIGCHLD;
+    // int flag = CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER | SIGCHLD;
+    int flag = CLONE_NEWUTS | CLONE_NEWNS | CLONE_NEWNET | CLONE_NEWPID | SIGCHLD;
     int child_pid = clone(setup, child_stack + STACK_SIZE, flag, this);
     std::cout << child_pid << std::endl;
     this->child_pid = child_pid;
